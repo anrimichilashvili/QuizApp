@@ -14,7 +14,12 @@ class QuizController extends Controller
      */
     public function index()
     {
-        //
+        // Fetch all quizzes from the database
+        $quizzes = Quiz::orderBy('created_at', 'desc')->get();
+
+
+        // Pass the quizzes to the view
+        return view('quizzes.index', compact('quizzes'));
     }
 
     /**
@@ -27,16 +32,41 @@ class QuizController extends Controller
         //
     }
 
+    public function take($quizId)
+{
+    $quiz = Quiz::findOrFail($quizId);
+    $questions = $quiz->questions;
+
+    return view('quiz.take', compact('quiz', 'questions'));
+}
+
+    public function store(Request $request)
+{
+    $ $request->validate([
+        'name' => 'required|string|max:255',
+        'photo' => 'required|string|max:255',
+        'description' => 'required|string',
+    ]);
+
+    $user = Auth::user(); // Get the currently authenticated user
+
+    Quiz::create([
+        'Name' => $request->input('name'),
+        'Photo' => $request->input('photo'),
+        'Description' => $request->input('description'),
+        'user_id' => $user->id,
+    ]);
+
+    return redirect()->route('home')->with('success', 'Quiz added successfully.');
+
+}
+
     /**
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
-    {
-        //
-    }
 
     /**
      * Display the specified resource.
@@ -44,9 +74,23 @@ class QuizController extends Controller
      * @param  \App\Models\Quiz  $quiz
      * @return \Illuminate\Http\Response
      */
-    public function show(Quiz $quiz)
+    public function show($quizId)
     {
-        //
+        $quiz = Quiz::findOrFail($quizId);
+        $questions = $quiz->questions;
+
+        return view('quiz.show', compact('quiz', 'questions'));
+    }
+
+    public function submit(Request $request, $quizId)
+    {
+        // Handle submitted answers and calculate score
+        // Update the logic based on your requirements
+        $submittedAnswers = $request->input('answers');
+        // Perform scoring logic and store results as needed
+
+        return redirect()->route('quiz.show', $quizId)
+            ->with('success', 'Quiz submitted successfully. Your score is: ' . $score);
     }
 
     /**

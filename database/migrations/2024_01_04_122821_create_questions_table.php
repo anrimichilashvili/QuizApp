@@ -23,8 +23,11 @@ return new class extends Migration
             $table->string('correct_answer');
             $table->string('Photo')->nullable();;
 
-            //$table->unsignedBigInteger('quiz_id');
-            //$table->foreign('quiz_id')->references('id')->on('quizzes');
+            $table->unsignedBigInteger('quiz_id');
+            $table->foreign('quiz_id')->references('id')->on('quizzes');
+
+            $table->unsignedBigInteger('user_id');
+            $table->foreign('user_id')->references('id')->on('users');
 
             $table->timestamps();
         });
