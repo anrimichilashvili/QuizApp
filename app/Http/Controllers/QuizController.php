@@ -2,128 +2,101 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Quiz;
 use Illuminate\Http\Request;
+use App\Models\Quiz;
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Support\Facades\Session;
 
 class QuizController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function index()
     {
-        // Fetch all quizzes from the database
-        $quizzes = Quiz::orderBy('created_at', 'desc')->get();
+        $quizzes = Quiz::all(); 
 
-
-        // Pass the quizzes to the view
         return view('quizzes.index', compact('quizzes'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
+    public function show(Quiz $quiz)
     {
-        //
+        return view('quizzes.show', compact('quiz'));
     }
 
-    public function take($quizId)
-{
-    $quiz = Quiz::findOrFail($quizId);
-    $questions = $quiz->questions;
-
-    return view('quiz.take', compact('quiz', 'questions'));
-}
-
-    public function store(Request $request)
-{
-    $ $request->validate([
-        'name' => 'required|string|max:255',
-        'photo' => 'required|string|max:255',
-        'description' => 'required|string',
-    ]);
-
-    $user = Auth::user(); // Get the currently authenticated user
-
-    Quiz::create([
-        'Name' => $request->input('name'),
-        'Photo' => $request->input('photo'),
-        'Description' => $request->input('description'),
-        'user_id' => $user->id,
-    ]);
-
-    return redirect()->route('home')->with('success', 'Quiz added successfully.');
-
-}
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Models\Quiz  $quiz
-     * @return \Illuminate\Http\Response
-     */
-    public function show($quizId)
+    public function edit($quizId)
     {
         $quiz = Quiz::findOrFail($quizId);
+    
         $questions = $quiz->questions;
-
-        return view('quiz.show', compact('quiz', 'questions'));
+    
+        return view('quizzes.edit', compact('quiz', 'questions'));
     }
 
-    public function submit(Request $request, $quizId)
-    {
-        // Handle submitted answers and calculate score
-        // Update the logic based on your requirements
-        $submittedAnswers = $request->input('answers');
-        // Perform scoring logic and store results as needed
+    
 
-        return redirect()->route('quiz.show', $quizId)
-            ->with('success', 'Quiz submitted successfully. Your score is: ' . $score);
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\Quiz  $quiz
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(Quiz $quiz)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Quiz  $quiz
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, Quiz $quiz)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\Quiz  $quiz
-     * @return \Illuminate\Http\Response
-     */
     public function destroy(Quiz $quiz)
     {
-        //
+        if (auth()->user()->id === 1 || auth()->user()->isAdmin() || auth()->user()->id === $quiz->user_id) {
+            $quiz->delete();
+            return redirect()->route('home')->with('success', 'Quiz deleted successfully.');
+        } else {
+            return redirect()->route('home')->with('error', 'Unauthorized to delete this quiz.');
+        }
     }
+
+    public function create()
+    {
+        return view('quizzes.create');
+    }
+
+
+    public function store(Request $request)
+    {
+        $validatedData = $request->validate([
+            'Name' => 'required|string',
+            'Photo' => 'required|string',
+            'Description' => 'required|string',
+        ]);
+
+        $quiz = Quiz::create([
+            'Name' => $validatedData['Name'],
+            'Photo' => $validatedData['Photo'],
+            'Description' => $validatedData['Description'],
+            'user_id' => auth()->id(), 
+        ]);
+
+        return redirect()->route('home');
+    }
+
+
+    public function submit(Request $request, Quiz $quiz)
+{
+    $submittedAnswers = $request->input('answers');
+
+    $score = $this->calculateScore($quiz, $submittedAnswers);
+
+    Session::put('quiz_score', $score);
+    Session::put('quiz_id', $quiz->id);
+
+    return view('quizzes.score', compact('score', 'quiz'));
+}
+
+private function calculateScore(Quiz $quiz, $submittedAnswers)
+{
+    $questions = $quiz->questions;
+    $totalQuestions = $questions->count();
+
+    $correctAnswers = 0;
+
+    foreach ($questions as $question) {
+        $questionId = $question->id;
+
+        if ($submittedAnswers[$questionId] === $question->correct_answer) {
+            $correctAnswers++;
+        }
+    }
+
+    $score = $correctAnswers;
+
+    return $score;
+}
+
 }

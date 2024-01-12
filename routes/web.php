@@ -3,7 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HomeController;
-
+use App\Http\Controllers\QuizController;
+use App\Http\Controllers\QuestionController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -31,10 +32,27 @@ Route::group(['middleware' => 'auth'], function () {
     Route::delete('/logout', [AuthController::class, 'logout'])->name('logout');
 });
 
+Route::get('/quizzes/{quiz}', [QuizController::class, 'show'])->name('quiz.show');
 
-Route::get('/quiz/{id}', [QuizController::class, 'show'])->name('quiz.show');
-Route::post('/quiz/take', 'App\Http\Controllers\QuizController@take')->name('quiz.take');
-Route::post('/quiz/store', 'QuizController@store')->name('quiz.store');
+Route::get('/quizzes/{quiz}/edit', [QuizController::class, 'edit'])->name('quiz.edit');
 
+Route::delete('/quizzes/{quiz}', [QuizController::class, 'destroy'])->name('quiz.delete');
+
+Route::get('/quizzes/create', [QuizController::class, 'create'])->name('quiz.create');
+Route::post('/quizzes', [QuizController::class, 'store'])->name('quiz.store');
+
+
+Route::post('/quizzes/{quiz}/submit', [QuizController::class, 'submit'])->name('quiz.submit');
+
+Route::put('/quizzes/{quiz}', 'QuizController@update')->name('quiz.update');
+
+
+
+
+Route::delete('/questions/{question}', [QuestionController::class, 'destroy'])->name('question.delete');
+Route::get('/questions/create/{quizId}', [QuestionController::class, 'create'])->name('question.create');
+
+
+Route::post('/questions/{quizId}', [QuestionController::class, 'store'])->name('question.store');
 
 
